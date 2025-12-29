@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Prompt Doraemon Comic Generator (Gemini)</title>
+  <style>
+    :root{
+      --bg:#0b1220; --card:#111a2e; --muted:#9fb0d0; --text:#eaf0ff; --accent:#4cc9f0;
+      --accent2:#a78bfa; --danger:#ff6b6b; --ok:#2dd4bf;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background: radial-gradient(1200px 600px at 20% 0%, #18264a 0%, var(--bg) 55%, #060a12 100%);
+      color:var(--text);
+    }
+    header{
+      padding:24px 18px 10px; max-width:1100px; margin:0 auto;
+      display:flex; gap:14px; align-items:flex-start; justify-content:space-between; flex-wrap:wrap;
+    }
+    .title{
+      display:flex; flex-direction:column; gap:6px;
+    }
+    h1{margin:0; font-size:20px; letter-spacing:.2px}
+    .sub{margin:0; color:var(--muted); font-size:13px; max-width:620px; line-height:1.35}
+    .badge{
+      display:inline-flex; align-items:center; gap:8px;
+      background: rgba(76,201,240,.12);
+      border:1px solid rgba(76,201,240,.3);
+      color:#bff3ff; padding:6px 10px; border-radius:999px; font-size:12px;
+    }
+    main{max-width:1100px; margin:0 auto; padding:10px 18px 40px}
+    .grid{display:grid; grid-template-columns: 1.1fr .9fr; gap:14px}
+    @media (max-width: 980px){ .grid{grid-template-columns:1fr} }
+    .card{
+      background: rgba(17,26,46,.86);
+      border:1px solid rgba(180,200,255,.12);
+      border-radius:18px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+      overflow:hidden;
+    }
+    .card .hd{
+      padding:14px 16px; border-bottom:1px solid rgba(180,200,255,.12);
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .card .hd b{font-size:13px}
+    .card .bd{padding:14px 16px}
+    label{display:block; color:var(--muted); font-size:12px; margin:10px 0 6px}
+    textarea, input[type="text"], input[type="password"], select{
+      width:100%;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(180,200,255,.14);
+      color:var(--text);
+      border-radius:12px;
+      padding:10px 12px;
+      outline:none;
+      transition:.2s;
+      font-size:13px;
+    }
+    textarea{min-height:92px; resize:vertical; line-height:1.45}
+    textarea:focus, input:focus, select:focus{border-color: rgba(76,201,240,.55); box-shadow:0 0 0 3px rgba(76,201,240,.18)}
+    .row{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+    @media(max-width:650px){.row{grid-template-columns:1fr}}
+    .btns{display:flex; flex-wrap:wrap; gap:10px; margin-top:12px}
+    button{
+      border:0; cursor:pointer;
+      padding:10px 14px;
+      border-radius:14px;
+      background: linear-gradient(135deg, rgba(76,201,240,.95), rgba(167,139,250,.95));
+      color:#071018;
+      font-weight:700;
+      font-size:13px;
+      transition:.2s;
+    }
+    button.secondary{
+      background: rgba(255,255,255,.08);
+      border:1px solid rgba(180,200,255,.18);
+      color:var(--text);
+      font-weight:600;
+    }
+    button.danger{
+      background: rgba(255,107,107,.12);
+      border:1px solid rgba(255,107,107,.35);
+      color:#ffd9d9;
+      font-weight:700;
+    }
+    button:active{transform: translateY(1px)}
+    .note{
+      margin-top:10px; color:var(--muted); font-size:12px; line-height:1.35
+    }
+    .out{
+      white-space:pre-wrap; word-break:break-word;
+      background: rgba(0,0,0,.25);
+      border:1px solid rgba(180,200,255,.14);
+      border-radius:14px;
+      padding:12px;
+      min-height:220px;
+      font-size:13px;
+      line-height:1.45;
+    }
+    .status{
+      display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+      font-size:12px; color:var(--muted);
+    }
+    .dot{width:8px; height:8px; border-radius:999px; background: rgba(159,176,208,.7)}
+    .dot.ok{background: rgba(45,212,191,.95)}
+    .dot.bad{background: rgba(255,107,107,.95)}
+    .mini{
+      font-size:11px; color:var(--muted);
+    }
+    .pill{
+      background: rgba(255,255,255,.08);
+      border:1px solid rgba(180,200,255,.14);
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:12px;
+      color:var(--text);
+      display:inline-flex;
+      gap:8px; align-items:center;
+    }
+    .kbd{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size:11px; padding:2px 6px; border-radius:8px;
+      background: rgba(255,255,255,.08);
+      border:1px solid rgba(180,200,255,.14);
+      color:#dbe7ff;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="title">
+    <div class="badge">🪄 Doraemon Prompt Helper • Gemini API • 1 File</div>
+    <h1>Website tĩnh hỗ trợ viết Prompt tạo truyện tranh Doraemon (tiếng Việt)</h1>
+    <p class="sub">
+      Nhập ý tưởng → hệ thống tạo prompt chuẩn màu sắc + panel + thoại. Có <b>Character Bible cố định</b> để nhân vật không bị nhầm.
+      Bạn có thể dùng prompt này để copy sang Midjourney/SD/ComfyUI/any model hoặc dùng Gemini để tự mở rộng nội dung.
+    </p>
+  </div>
+  <div class="status">
+    <span class="pill"><span class="dot" id="apiDot"></span> <span id="apiState">Chưa kết nối API</span></span>
+    <span class="pill">⌨️ <span class="kbd">Ctrl</span> + <span class="kbd">Enter</span> để tạo</span>
+  </div>
+</header>
+
+<main>
+  <div class="grid">
+
+    <!-- LEFT: INPUT + SETTINGS -->
+    <section class="card">
+      <div class="hd">
+        <b>1) Nhập ý tưởng truyện tranh</b>
+        <span class="mini">Mẹo: viết 1–2 câu là đủ</span>
+      </div>
+      <div class="bd">
+        <label>Ý tưởng / Tình huống chính</label>
+        <textarea id="idea" placeholder="Ví dụ: Doraemon cho Nobita một bảo bối để làm bài nhanh, nhưng Shizuka vô tình dùng nhầm khiến cả lớp bị đảo lộn."></textarea>
+
+        <div class="row">
+          <div>
+            <label>Số trang / số cảnh (panel scenes)</label>
+            <select id="panelCount">
+              <option value="4">4 cảnh (ngắn, dễ)</option>
+              <option value="6" selected>6 cảnh (chuẩn)</option>
+              <option value="8">8 cảnh (dài)</option>
+            </select>
+          </div>
+          <div>
+            <label>Giọng điệu / không khí</label>
+            <select id="tone">
+              <option value="hài hước, ấm áp, dễ thương" selected>Hài hước – ấm áp</option>
+              <option value="kịch tính nhẹ, hồi hộp nhưng vui">Hồi hộp – vui</option>
+              <option value="bài học nhẹ nhàng, cảm động">Cảm động – bài học</option>
+              <option value="điên rồ, phi lý nhưng vẫn trong Doraemon">Phi lý – bùng nổ</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Địa điểm chính</label>
+            <input id="place" type="text" placeholder="Ví dụ: lớp học, sân chơi, phòng Nobita" value="khu phố quen thuộc, nhà Nobita, lớp học" />
+          </div>
+          <div>
+            <label>Độ dài thoại (mỗi bóng thoại)</label>
+            <select id="speechLen">
+              <option value="ngắn, tối đa 12 từ/bóng">Ngắn</option>
+              <option value="vừa, tối đa 18 từ/bóng" selected>Vừa</option>
+              <option value="dài, tối đa 25 từ/bóng">Dài</option>
+            </select>
+          </div>
+        </div>
+
+        <label>2) API Key Gemini (tuỳ chọn — nếu muốn “Prompt thông minh”)</label>
+        <input id="apiKey" type="password" placeholder=" AIzaSyBmxXTrZy6WZJCt-Z2v9T_jIZdn_vRJkLo" />
+
+        <div class="btns">
+          <button id="btnQuick">⚡ Tạo Prompt nhanh (không cần API)</button>
+          <button id="btnGemini" class="secondary">✨ Tạo Prompt thông minh (Gemini)</button>
+          <button id="btnCopy" class="secondary">📋 Copy Prompt</button>
+          <button id="btnReset" class="danger">🧹 Reset</button>
+        </div>
+
+        <p class="note">
+          <b>Quan trọng:</b> Đây là web tĩnh, API key nằm phía client nên chỉ dùng cho cá nhân. Nếu muốn public, hãy chuyển call API sang server.
+        </p>
+      </div>
+    </section>
+
+    <!-- RIGHT: CHARACTER BIBLE + OUTPUT -->
+    <section class="card">
+      <div class="hd">
+        <b>Character Bible (cố định, chống nhầm nhân vật)</b>
+        <span class="mini">Chỉ sửa 1 lần</span>
+      </div>
+      <div class="bd">
+        <label>“Tệp nhân vật” (đừng xoá — giúp model không nhầm)</label>
+        <textarea id="bible"></textarea>
+
+        <label>Prompt xuất ra (copy dùng luôn)</label>
+        <div class="out" id="output"></div>
+
+        <p class="note">
+          Prompt này đã có: <b>phong cách màu, nét vẽ, bố cục panel, thoại tiếng Việt, nhất quán nhân vật</b>.
+        </p>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<script>
+/**
+ * =============================
+ *  Doraemon Comic Prompt Helper
+ *  - Single-file static site
+ *  - Optional Gemini call
+ * =============================
+ */
+
+// === 1) Default Character Bible (Fixed) ===
+const DEFAULT_BIBLE = `
+[CHARACTER_BIBLE_DORAEMON_FIXED]
+- Doraemon: mèo máy màu xanh, không tai, mặt tròn, mũi đỏ, chuông vàng ở cổ, túi thần kỳ trước bụng. Tính cách: thông minh, tốt bụng, đôi khi hoảng nhưng luôn giúp bạn.
+- Nobita: cậu bé tóc đen, đeo kính tròn, áo vàng, quần xanh, tính vụng về, hay lười, dễ hoảng, nhưng tốt bụng.
+- Shizuka: bé gái tóc đen, hiền, lịch sự, áo hồng, váy/đầm sáng màu, chăm học, dịu dàng.
+- Gian (Jaian): cậu bé to con, áo cam, giọng lớn, hay bắt nạt, nhưng đôi khi nghĩa khí.
+- Suneo: cậu bé tóc nhọn, áo xanh lá, thích khoe khoang, tính khôn lỏi.
+- Bối cảnh: khu phố Nhật Bản quen thuộc, nhà Nobita, công viên, lớp học. Thời gian hiện đại, ánh sáng tươi.
+RULES:
+1) Không đổi màu quần áo, ngoại hình, phụ kiện của nhân vật.
+2) Không thêm nhân vật lạ trừ khi được yêu cầu.
+3) Khi mô tả cảnh, luôn giữ tỷ lệ Doraemon thấp hơn Nobita một chút, đứng cạnh/đi sau.
+4) Đối thoại tiếng Việt, giọng đúng tính cách từng nhân vật.
+[/CHARACTER_BIBLE_DORAEMON_FIXED]
+`.trim();
+
+// === 2) Local storage helpers ===
+const LS_KEY = "doraemon_prompt_helper_v1";
+function loadState(){
+  try{
+    const s = JSON.parse(localStorage.getItem(LS_KEY) || "{}");
+    return s;
+  }catch(e){ return {}; }
+}
+function saveState(partial){
+  const prev = loadState();
+  localStorage.setItem(LS_KEY, JSON.stringify({ ...prev, ...partial }));
+}
+
+// === 3) DOM ===
+const ideaEl = document.getElementById("idea");
+const panelCountEl = document.getElementById("panelCount");
+const toneEl = document.getElementById("tone");
+const placeEl = document.getElementById("place");
+const speechLenEl = document.getElementById("speechLen");
+const apiKeyEl = document.getElementById("apiKey");
+const bibleEl = document.getElementById("bible");
+const outputEl = document.getElementById("output");
+
+const apiDot = document.getElementById("apiDot");
+const apiState = document.getElementById("apiState");
+
+const btnQuick = document.getElementById("btnQuick");
+const btnGemini = document.getElementById("btnGemini");
+const btnCopy = document.getElementById("btnCopy");
+const btnReset = document.getElementById("btnReset");
+
+// === 4) Init ===
+(function init(){
+  const state = loadState();
+  bibleEl.value = state.bible || DEFAULT_BIBLE;
+  apiKeyEl.value = state.apiKey || "";
+  ideaEl.value = state.idea || "";
+  panelCountEl.value = state.panelCount || "6";
+  toneEl.value = state.tone || "hài hước, ấm áp, dễ thương";
+  placeEl.value = state.place || "khu phố quen thuộc, nhà Nobita, lớp học";
+  speechLenEl.value = state.speechLen || "vừa, tối đa 18 từ/bóng";
+  outputEl.textContent = state.output || "👉 Nhập ý tưởng và bấm “Tạo Prompt”.";
+  updateApiState();
+
+  // Autosave changes
+  [bibleEl, apiKeyEl, ideaEl, panelCountEl, toneEl, placeEl, speechLenEl].forEach(el=>{
+    el.addEventListener("input", () => {
+      saveState({
+        bible: bibleEl.value,
+        apiKey: apiKeyEl.value,
+        idea: ideaEl.value,
+        panelCount: panelCountEl.value,
+        tone: toneEl.value,
+        place: placeEl.value,
+        speechLen: speechLenEl.value,
+      });
+      updateApiState();
+    });
+  });
+})();
+
+function updateApiState(){
+  const hasKey = (apiKeyEl.value || "").trim().length > 10;
+  apiDot.className = "dot " + (hasKey ? "ok" : "");
+  apiState.textContent = hasKey ? "Sẵn sàng dùng Gemini" : "Chưa có API key";
+}
+
+// === 5) Prompt builder (Quick mode) ===
+function buildPromptQuick(){
+  const idea = ideaEl.value.trim();
+  if(!idea){
+    outputEl.textContent = "⚠️ Bạn chưa nhập ý tưởng.";
+    return;
+  }
+
+  const bible = bibleEl.value.trim();
+  const panels = panelCountEl.value;
+  const tone = toneEl.value;
+  const place = placeEl.value.trim();
+  const speechLen = speechLenEl.value;
+
+  const prompt =
+`[PROMPT_TAO_TRUYEN_TRANH_DORAEMON_TIENg_VIET]
+MỤC TIÊU:
+- Tạo truyện tranh Doraemon theo phong cách manga thiếu nhi Nhật Bản cổ điển, màu sắc tươi sáng, nét sạch, dễ thương, không bạo lực nặng.
+- Ngôn ngữ thoại: tiếng Việt, tự nhiên, đúng tính cách.
+- Giữ nhất quán nhân vật theo Character Bible.
+
+${bible}
+
+Ý TƯỞNG:
+"${idea}"
+
+YÊU CẦU ĐẦU RA:
+1) Viết kịch bản truyện tranh gồm ${panels} cảnh (panel scenes).
+2) Mỗi cảnh phải có:
+   - [CẢNH #]: mô tả bố cục (toàn cảnh/cận cảnh), vị trí nhân vật, hành động, cảm xúc.
+   - [MÀU & PHONG CÁCH]: màu tươi sáng, ánh sáng ban ngày hoặc phù hợp tình huống, background rõ, vibe Doraemon.
+   - [THOẠI]: bóng thoại tiếng Việt (${speechLen}), ghi rõ ai nói.
+3) Bối cảnh chính: ${place}
+4) Nhịp truyện: ${tone}
+5) Kết thúc: có twist hài hước + bài học nhẹ nhàng.
+
+RÀNG BUỘC CHỐNG NHẦM:
+- Không đổi ngoại hình/đồ/giọng nhân vật.
+- Doraemon luôn có túi thần kỳ và chuông vàng.
+- Nobita luôn đeo kính tròn, áo vàng, quần xanh.
+- Nếu xuất hiện bảo bối: mô tả rõ hình dạng, cách hoạt động, và hậu quả hài.
+
+ĐỊNH DẠNG TRẢ VỀ:
+Xuất theo mẫu:
+CẢNH 1:
+- Mô tả:
+- Màu & phong cách:
+- Thoại:
+...
+CẢNH ${panels}:
+- Mô tả:
+- Màu & phong cách:
+- Thoại:
+[/PROMPT_TAO_TRUYEN_TRANH_DORAEMON_TIENg_VIET]`;
+
+  outputEl.textContent = prompt;
+  saveState({ output: prompt });
+}
+
+// === 6) Gemini API call (Smart mode) ===
+// NOTE: This is client-side, keep personal use only.
+async function buildPromptGemini(){
+  const apiKey = (apiKeyEl.value || "").trim();
+  const idea = ideaEl.value.trim();
+  if(!idea){
+    outputEl.textContent = "⚠️ Bạn chưa nhập ý tưởng.";
+    return;
+  }
+  if(apiKey.length < 10){
+    outputEl.textContent = "⚠️ Bạn chưa nhập API Key Gemini (hoặc key quá ngắn).";
+    return;
+  }
+
+  const bible = bibleEl.value.trim();
+  const panels = panelCountEl.value;
+  const tone = toneEl.value;
+  const place = placeEl.value.trim();
+  const speechLen = speechLenEl.value;
+
+  outputEl.textContent = "⏳ Đang gọi Gemini để tạo prompt thông minh...";
+
+  // Gemini request prompt: ask Gemini to return a ready-to-copy prompt
+  const systemInstruction =
+`Bạn là trợ lý tạo PROMPT truyện tranh Doraemon bằng tiếng Việt.
+Nhiệm vụ: Từ ý tưởng người dùng, tạo ra một prompt cuối cùng để họ copy dùng cho AI tạo truyện tranh.
+Prompt cuối cùng phải giữ Character Bible cố định để tránh nhầm nhân vật.
+Không viết truyện, chỉ viết PROMPT.`;
+
+  const userMessage =
+`Hãy tạo PROMPT copy dùng ngay theo yêu cầu sau:
+
+- Số cảnh: ${panels}
+- Nhịp truyện: ${tone}
+- Bối cảnh: ${place}
+- Độ dài thoại: ${speechLen}
+- Ý tưởng: "${idea}"
+
+Đây là Character Bible bắt buộc:
+${bible}
+
+Yêu cầu:
+1) Prompt cuối cùng có cấu trúc rõ ràng, ngắn gọn nhưng đủ chi tiết.
+2) Nhấn mạnh phong cách màu, nét vẽ, và chống nhầm nhân vật.
+3) Nhắc rõ: thoại tiếng Việt.
+4) Đưa ra định dạng output theo dạng từng cảnh.
+Chỉ xuất ra prompt, không giải thích thêm.`;
+
+  // Using Gemini 1.5 Flash style endpoint
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+
+  const body = {
+    contents: [
+      { role: "user", parts: [{ text: systemInstruction + "\n\n" + userMessage }] }
+    ],
+    generationConfig: {
+      temperature: 0.7,
+      topP: 0.9,
+      maxOutputTokens: 2048
+    }
+  };
+
+  try{
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+
+    if(!res.ok){
+      const t = await res.text();
+      outputEl.textContent = `❌ Lỗi API: ${res.status}\n\n${t}`;
+      return;
+    }
+
+    const data = await res.json();
+    const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text).join("") || "";
+
+    if(!text){
+      outputEl.textContent = "❌ Gemini trả về rỗng. Hãy thử lại.";
+      return;
+    }
+
+    outputEl.textContent = text.trim();
+    saveState({ output: text.trim() });
+
+  }catch(err){
+    outputEl.textContent = `❌ Không thể gọi API (CORS / mạng). Lỗi:\n${err.message}`;
+  }
+}
+
+// === 7) Copy ===
+async function copyOutput(){
+  const text = outputEl.textContent || "";
+  if(!text.trim()){
+    alert("Chưa có prompt để copy.");
+    return;
+  }
+  try{
+    await navigator.clipboard.writeText(text);
+    alert("✅ Đã copy prompt vào clipboard!");
+  }catch(e){
+    // fallback
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    ta.remove();
+    alert("✅ Đã copy (fallback)!");
+  }
+}
+
+// === 8) Reset ===
+function resetAll(){
+  if(!confirm("Reset toàn bộ nội dung? (sẽ xoá lưu localStorage)")) return;
+  localStorage.removeItem(LS_KEY);
+  location.reload();
+}
+
+// === 9) Events ===
+btnQuick.addEventListener("click", buildPromptQuick);
+btnGemini.addEventListener("click", buildPromptGemini);
+btnCopy.addEventListener("click", copyOutput);
+btnReset.addEventListener("click", resetAll);
+
+// Ctrl + Enter to generate quick prompt
+document.addEventListener("keydown", (e)=>{
+  if(e.ctrlKey && e.key === "Enter"){
+    buildPromptQuick();
+  }
+});
+</script>
+</body>
+</html>
